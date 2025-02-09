@@ -9,7 +9,7 @@ process EXTRACT {
 
     input:
     tuple val(famid), path(ped), val(pheno), val(category),
-          path(file), path(index), path(variants)
+          path(file), path(index), val(n_vars)
 
     output:
     tuple val(famid), val(pheno), val(category),

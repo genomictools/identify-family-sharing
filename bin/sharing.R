@@ -2,106 +2,64 @@
 
 # Capture command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
-famid           <- args[1]
-phenotype       <- args[2]
-category        <- args[3]
-type            <- args[4]
-ped_file        <- args[5]
-phenotypes_file <- args[6]
-variants_file   <- args[7]
-       
-# Load data
-# genotypes
-pedigree <- pedtools::readPed(ped_file)
-pedigree$FAMID <- famid
-genotypes <- tibble::as_tibble(pedigree)
-genotypes <- dplyr::mutate(genotypes, famid = famid)
-genotypes <- tidyr::gather(genotypes, variant, genotype, tidyr::starts_with('chr'))
 
-# phenotypes
-phenotypes <- readr::read_tsv(phenotypes_file)
-phenotypes <- dplyr::mutate(phenotypes, carrier = ifelse(is.na(carrier), 0, carrier))
+ped_file  <- args[1]
+bim       <- args[2]
+bed       <- args[3]
+fam       <- args[4]
+type      <- args[5]
+out_file  <- args[6]
 
-# annotations
-variants <- readr::read_tsv(variants_file)
-annotations <- dplyr::select(variants, ensembl = Gene, gene = SYMBOL, variant = SNP, consequence = Consequence)
+# setwd('/data/rds/DGE/DUDGE/MOPOPGEN/mahmed03/childhood_cancer/wtnb_families/')
+# 
+# bim       <- 'results/plinked/FACT5726.wtnb.Stop.bim'
+# bed       <- 'results/plinked/FACT5726.wtnb.Stop.bed'
+# fam       <- 'results/plinked/FACT5726.wtnb.Stop.fam'
+# ped_file  <- 'results/plinked/FACT5726.wtnb.Stop.ped'
+# type      <- 'affected'
 
-# merge tables
-d <- tibble::tibble(famid, phenotype, category)
-d <- dplyr::left_join(d, genotypes)
-d <- dplyr::left_join(d, phenotypes)
-d <- dplyr::left_join(d, annotations)
+# Load plink files
+plnk <- snpStats::read.plink(bed, bim, fam)
+rownames(plnk$genotypes) <- plnk$fam$member
 
-# modify individual id and phenotype, and status 
-d <- dplyr::mutate(d, individual = ifelse(!is.na(pheno), paste0(id, ' (', pheno, ')'), id))
-d <- dplyr::mutate(d, 
-  individual_type = dplyr::case_when(
-  aff == 2 ~ 'affected',
-  aff != 2 & carrier == 1 ~ 'carrier',
-  aff != 2 & carrier == 0 ~ 'not_affected'
-  ))
-
-# modify genotypes
-d <- dplyr::mutate(d,
-  genotype2 = dplyr::case_when(
-    genotype == '-/-' ~ 'missing',
-    genotype == 'a/a' ~ 'alt_hom',
-    genotype == 'a/b' ~ 'alt_het',
-    genotype == 'b/b' ~ 'ref_hom',
-  ))
-
-# Complete sharing
-if ( type == 'complete' ) {
-  family_summary <- dplyr::group_by(d, famid, phenotype, category, ensembl, gene, consequence, variant, genotype2)
-  family_summary <- dplyr::summarise(family_summary, n = dplyr::n())
-  family_summary <- tidyr::pivot_wider(family_summary, names_from = 'genotype2', values_from = 'n')
-  family_summary <- dplyr::mutate(family_summary, n_variant = 1)
-  
-  individual_summary <- dplyr::filter(d, genotype2 == 'alt_het')
-  individual_summary <- dplyr::group_by(individual_summary, famid, phenotype, category, ensembl, gene, consequence, variant, individual_type)
-  individual_summary <- dplyr::summarise(individual_summary, n = dplyr::n(), individual = paste(unique(individual), collapse = ', '))
-  individual_summary <- tidyr::pivot_wider(individual_summary, names_from = 'individual_type', values_from = c('n', 'individual'))
-} else if ( type == 'partial' ) {
-  family_summary <- dplyr::group_by(d, famid, phenotype, category, ensembl, gene, genotype2)
-  family_summary <- dplyr::summarise(
-    n_variant = length(unique(variant)),
-    variant = paste(unique(variant), collapse = ','),
-    consequence = paste(unique(consequence), collapse = ','),
-    family_summary, n = dplyr::n()
-  )
-  family_summary <- tidyr::pivot_wider(family_summary, names_from = 'genotype2', values_from = 'n')
-  
-  individual_summary <- dplyr::filter(d, genotype2 == 'alt_het')
-  individual_summary <- dplyr::group_by(individual_summary, famid, phenotype, category, ensembl, gene, individual_type)
-  individual_summary <- dplyr::summarise(individual_summary, n = dplyr::n(), individual = paste(unique(individual), collapse = ', '))
-  individual_summary <- tidyr::pivot_wider(individual_summary, names_from = 'individual_type', values_from = c('n', 'individual'))
-  }
-
-# Merge
-sharing <- dplyr::left_join(family_summary, individual_summary)
-
-# Format output
-col_names <- c(
-  "famid", "phenotype", "category", "ensembl", "gene", "n_variant", "variant", "consequence",   
-  "alt_het", "alt_hom", "ref_hom","missing",
-  "n_affected", "n_carrier", "n_not_affected", 
-  "individual_affected", "individual_carrier", "individual_not_affected"
+# Load pedigree
+d <- readr::read_tsv(
+  ped_file,
+  col_names = c('id', 'dadid', 'momid', 'sex', 'affected', 'famid')
 )
 
-output.df <- data.frame(
-  matrix(
-    character(),
-    ncol = length(col_names),
-    dimnames = list(c(), col_names)),
-  stringsAsFactors = FALSE
+d$affected <- ifelse(d$affected == 0, NA, d$affected - 1)
+d$sex <- ifelse(d$sex == 0, 1, d$sex)
+
+pdg <- with(d, kinship2::pedigree(id, dadid, momid, sex, affected, famid = famid))
+
+if ( type == 'affected' ) {
+  # carriers are the affected
+  carrs <- pdg$id[pdg$affected == 1]
+} else if ( type == 'complete') {
+} else if ( type == 'partial') {
+} else {
+  stop("Sharing type is not recognized.")
+}
+
+# Calculate probability of sharing among carriers
+prob <- RVS::RVsharing(pdg[1], carriers = carrs)
+names(prob) <- unique(d$famid)
+
+# Calculate p-values of sharing among carriers
+sharing <- RVS::multipleVariantPValue(
+  plnk$genotypes,
+  famInfo = plnk$fam,
+  sharingProbs = prob
 )
 
-sharing <- dplyr::mutate_all(sharing, as.character)
-sharing <- dplyr::full_join(output.df, sharing)
-sharing <- dplyr::select(sharing, col_names)
-
-# Write output to file
-readr::write_tsv(
-  sharing,
-  paste(famid, phenotype, category, type, 'tsv', sep = '.')
+# Format the output
+res <- tibble::tibble(
+  famid = names(prob),
+  variants = names(sharing$pvalues),
+  pvalues = sharing$pvalues,
+  potential_pvalues = sharing$potential_pvalues
 )
+
+# Save the results
+readr::write_tsv(res, out_file)

@@ -8,9 +8,8 @@ process CONVERT {
     publishDir("${params.output_dir}/plinked", mode: 'copy')
 
     input:
-    tuple val(famid), path(ped),
-          val(pheno), val(category),
-          path(vcf_in), path(index_in), path(variants)
+    tuple val(famid), path(ped), val(pheno), val(category),
+          path(vcf_in), path(index_in), val(n_vars)
 
     output:
     tuple val(famid), val(pheno), val(category),

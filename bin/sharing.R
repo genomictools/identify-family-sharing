@@ -3,12 +3,15 @@
 # Capture command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
 
-ped_file  <- args[1]
-bim       <- args[2]
-bed       <- args[3]
-fam       <- args[4]
-type      <- args[5]
-out_file  <- args[6]
+famid    <- args[1]
+pheno    <- args[2]
+category <- args[3]
+ped_file <- args[4]
+bim      <- args[5]
+bed      <- args[6]
+fam      <- args[7]
+variants <- args[8]
+type     <- args[9]
 
 # setwd('/data/rds/DGE/DUDGE/MOPOPGEN/mahmed03/childhood_cancer/wtnb_families/')
 # 
@@ -54,12 +57,26 @@ sharing <- RVS::multipleVariantPValue(
 )
 
 # Format the output
-res <- tibble::tibble(
-  famid = names(prob),
-  variants = names(sharing$pvalues),
+sharing_df <- tibble::tibble(
+  famid = famid,
+  variant = names(sharing$pvalues),
   pvalues = sharing$pvalues,
   potential_pvalues = sharing$potential_pvalues
 )
 
+# Annotations
+anno <- readr::read_tsv(variants)
+anno <- dplyr::select(anno, variant = SNP, gene = SYMBOL)
+
+# File ids
+ids <- tibble::tibble(
+  famid = famid,
+  pheno = pheno,
+  category = category,
+  type = type)
+
 # Save the results
+res <- dplyr::left_join(ids, sharing_df)
+res <- dplyr::left_join(res, anno)
+out_file  <- paste(famid, pheno, category, type, 'tsv', sep = '.')
 readr::write_tsv(res, out_file)

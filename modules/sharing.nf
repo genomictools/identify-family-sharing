@@ -10,7 +10,7 @@ process SHARING {
     input:
     tuple val(famid), val(pheno), val(category),
           path(ped), path(bim), path(bed), path(fam), path(nosex), path(log),
-          val(type)
+          path(variants), val(type)
 
     output:
     tuple val(famid), val(pheno), val(category), val(type),
@@ -19,6 +19,6 @@ process SHARING {
     script:
     """
     #!/bin/bash
-    sharing.R ${ped} ${bim} ${bed} ${fam} ${type} ${famid}.${pheno}.${category}.${type}.tsv
+    sharing.R ${famid} ${pheno} ${category} ${ped} ${bim} ${bed} ${fam} ${variants} ${type}
     """
 }

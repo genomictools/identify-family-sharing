@@ -17,6 +17,7 @@ process FILTER {
           val(pheno), val(category),
           path("${famid}.${pheno}.${category}.vcf.gz"),
           path("${famid}.${pheno}.${category}.vcf.gz.tbi"),
+		  path("${famid}.${pheno}.${category}.annotation.tsv"),
           env(n_vars)
         
     script:
@@ -38,8 +39,17 @@ process FILTER {
 
     # Index the VCF
     tabix ${famid}.${pheno}.${category}.vcf.gz
-
-    # Count the number of variants
+    
+	# Extract variant annotations
+	echo -e "SNP\t\$(bcftools +split-vep -l ${file} | cut -f 2 | tr '\n' '\t')" > "${famid}.${pheno}.${category}.annotation.tsv"
+    bcftools +split-vep \
+	    -s worst \
+		-f '%CHROM:%POS:%REF:%ALT\t%CSQ\n' \
+		-d -A tab \
+		${famid}.${pheno}.${category}.vcf.gz \
+		>> "${famid}.${pheno}.${category}.annotation.tsv"
+    
+	# Count the number of variants
     n_vars=\$(bcftools index -n ${famid}.${pheno}.${category}.vcf.gz)
     """
 }

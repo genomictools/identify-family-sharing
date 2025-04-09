@@ -1,5 +1,5 @@
 process ATTACH {
-    tag "${famid}:${pheno}:${category}:${type}"
+    tag "${famid}:${pheno}:${category}"
 
     label 'simple'
 
@@ -8,18 +8,17 @@ process ATTACH {
     publishDir("${params.output_dir}/markers/", mode: 'copy')
 
     input:
-    tuple val(famid), val(pheno), val(category), path(ped),
-          path(bim), path(bed), path(fam), path(nosex), path(log),
-          path(annotations),
-          val(type), path(sharing)
+    tuple val(famid), val(pheno), val(category),
+          path(ped), path(bim), path(bed), path(fam), path(nosex), path(log),
+          path(variants)
 
     output:
-    tuple val(famid), val(pheno), val(category), val(type),
-          path("${famid}.${pheno}.${category}.${type}.marked.ped")
+    tuple val(famid), val(pheno), val(category),
+          path("${famid}.${pheno}.${category}.marked.ped")
 
     script:
     """
     #!/bin/bash
-    attach.R ${bim} ${bed} ${fam} ${ped} ${famid}.${pheno}.${category}.${type}.marked
+    attach.R ${bim} ${bed} ${fam} ${ped} ${famid}.${pheno}.${category}.marked
     """
 }

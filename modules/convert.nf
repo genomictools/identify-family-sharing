@@ -9,7 +9,7 @@ process CONVERT {
 
     input:
     tuple val(famid), path(ped), val(pheno), val(category),
-          path(vcf_in), path(index_in), val(n_vars)
+          path(vcf_in), path(index_in), path(variants), val(n_vars)
 
     output:
     tuple val(famid), val(pheno), val(category),
@@ -18,7 +18,8 @@ process CONVERT {
           path("${famid}.${pheno}.${category}.bed"),
           path("${famid}.${pheno}.${category}.fam"),
           path("${famid}.${pheno}.${category}.nosex"),
-          path("${famid}.${pheno}.${category}.log")
+          path("${famid}.${pheno}.${category}.log"),
+          path(variants)
 
     script:
     """

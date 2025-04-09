@@ -5,7 +5,6 @@ nextflow.enable.dsl=2
 include { PEDIGREE }    from './modules/pedigree.nf'
 include { SUBSET }      from './modules/subset.nf'
 include { FILTER }      from './modules/filter.nf'
-include { EXTRACT }     from './modules/extract.nf'
 include { CONVERT }     from './modules/convert.nf'
 include { SHARING }     from './modules/sharing.nf'
 include { ATTACH }      from './modules/attach.nf'
@@ -39,18 +38,20 @@ workflow {
         | combine(category_ch)
         | FILTER
         | filter { it.last().toInteger() > 0}
-        | EXTRACT
-
-    // Extract genotypes, and indentify sharing
-    FILTER.out
-        | CONVERT 
+        | CONVERT
         | combine(type_ch)
         | SHARING
+        | map { ['shared', it.last()] }
+        | collectFile(keepHeader: true)
+        | splitCsv(header: true, sep: '\t')
+        | map { row -> [ row.famid, row.pheno, row.category, row.type, row.gene, row.variant, row.potential_pvalues, row.pvalues ] }
+        // | filter { it.last().toInteger() <= params.cutoff }
+        | take(5) 
+        | groupTuple(by: [0,1,2,3,4])
+        | set { shared }
 
-    // Draw pedigrees
-    CONVERT.out
-        | combine(EXTRACT.out, by: [0,1,2])
-        | combine(SHARING.out, by: [0,1,2])
-        | ATTACH
-        | DRAW
+        CONVERT.out
+            | ATTACH
+            | combine(shared, by: [0,1,2])
+            | DRAW
 }

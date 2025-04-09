@@ -27,7 +27,7 @@ families_ch = Channel.fromPath(params.cohorts)
     | map { row -> [row.famid, row.id, row.fid, row.mid, row.sex, row.aff, row.famid] }
     | groupTuple(by: 0)
 
-variable_ch = Channel.of( 'rlist', 'snplist', 'frqx' )
+variable_ch = Channel.of( 'rlist', 'snplist', 'frq.strat', 'frqx' )
 category_ch = Channel.of(params.categories.split(','))
 type_ch     = Channel.of(params.type.split(','))
 
@@ -63,19 +63,14 @@ workflow {
         | set { shared }
 
     // Draw pedigrees
-    if ( params.draw ) {
-        filtered
-            | ATTACH
-            | combine(shared, by: [0,1,2])
-            | DRAW
-    }
-
+    filtered
+        | ATTACH
+        | ( params.draw ? combine(shared, by: [0,1,2]) : map {it} )
+        | ( params.draw ? DRAW : map {it} )
 
     // Extract variants stats
-    if ( params.extract ) {
-        filtered
-            | combine(variable_ch)
-            | EXTRACT
-    }  
+    filtered
+        | ( params.extract ? combine(variable_ch) : map {it} )
+        | ( params.extract ? EXTRACT : map {it} )
 
 }

@@ -39,6 +39,12 @@ process EXTRACT {
 		#!/bin/bash
 		plink --bfile ${bim.baseName} --freqx --nonfounders --out ${famid}.${pheno}.${category}.extracted
 		"""
+    } else if ( variable == 'frq.strat' ) {
+		"""
+		#!/bin/bash
+		cat ${ped} | awk '{print \$6, \$1, \$5}' > clusters.txt
+		plink --bfile ${bim.baseName} --freq --nonfounders --within clusters.txt --out ${famid}.${pheno}.${category}.extracted
+		"""
     } else {
 		println "Variable ${variable} not recognized"
 	}

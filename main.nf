@@ -9,6 +9,7 @@ include { CONVERT }     from './modules/convert.nf'
 include { SHARING }     from './modules/sharing.nf'
 include { ATTACH }      from './modules/attach.nf'
 include { DRAW }        from './modules/draw.nf'
+include { EXTRACT }     from './modules/extract.nf'
 
 // Define input channels
 variants_ch = Channel.fromPath(params.cohorts)
@@ -26,6 +27,7 @@ families_ch = Channel.fromPath(params.cohorts)
     | map { row -> [row.famid, row.id, row.fid, row.mid, row.sex, row.aff, row.famid] }
     | groupTuple(by: 0)
 
+variable_ch = Channel.of( 'rlist', 'snplist', 'frqx' )
 category_ch = Channel.of(params.categories.split(','))
 type_ch     = Channel.of(params.type.split(','))
 
@@ -39,6 +41,10 @@ workflow {
         | FILTER
         | filter { it.last().toInteger() > 0}
         | CONVERT
+        | set { filtered }
+
+    // Calculate sharing
+    filtered
         | combine(type_ch)
         | SHARING
         | map { ['shared', it.last()] }
@@ -56,8 +62,14 @@ workflow {
         | groupTuple(by: [0,1,2,3,4])
         | set { shared }
 
-        CONVERT.out
-            | ATTACH
-            | combine(shared, by: [0,1,2])
-            | DRAW
+    // Draw pedigrees
+    filtered
+        | ATTACH
+        | combine(shared, by: [0,1,2])
+        | DRAW
+
+    // Extract variants stats   
+    filtered
+        | combine(variable_ch)
+        | EXTRACT
 }

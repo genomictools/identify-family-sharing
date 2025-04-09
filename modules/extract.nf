@@ -37,7 +37,7 @@ process EXTRACT {
     } else if ( variable == 'frqx' ) {
 		"""
 		#!/bin/bash
-		plink --bfile ${bim.baseName} --freqx --out ${famid}.${pheno}.${category}.extracted
+		plink --bfile ${bim.baseName} --freqx --nonfounders --out ${famid}.${pheno}.${category}.extracted
 		"""
     } else {
 		println "Variable ${variable} not recognized"

@@ -42,11 +42,17 @@ workflow {
         | combine(type_ch)
         | SHARING
         | map { ['shared', it.last()] }
-        | collectFile(keepHeader: true)
+        | collectFile(
+            keepHeader: true,
+            storeDir: "${params.output_dir}/sharing"
+        )
         | splitCsv(header: true, sep: '\t')
-        | map { row -> [ row.famid, row.pheno, row.category, row.type, row.gene, row.variant, row.potential_pvalues, row.pvalues ] }
-        // | filter { it.last().toInteger() <= params.cutoff }
-        | take(5) 
+        | map { row -> [
+            row.famid, row.pheno, row.category, row.type,
+            row.gene, row.variant,
+            row.potential_pvalues, row.pvalues 
+        ] }
+        | filter { it.last().toFloat() < params.cutoff }
         | groupTuple(by: [0,1,2,3,4])
         | set { shared }
 

@@ -20,6 +20,6 @@ process DRAW {
     script:
     """
     #!/bin/bash
-    draw.R ${ped} ${variant.join(',')} ${famid}.${pheno}.${category}.${type}.${gene}
+    draw.R ${famid} ${pheno} ${category} ${ped} ${type} ${gene} ${variant.join(',')}
     """
 }

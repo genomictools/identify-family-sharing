@@ -63,13 +63,19 @@ workflow {
         | set { shared }
 
     // Draw pedigrees
-    filtered
-        | ATTACH
-        | combine(shared, by: [0,1,2])
-        | DRAW
+    if ( params.draw ) {
+        filtered
+            | ATTACH
+            | combine(shared, by: [0,1,2])
+            | DRAW
+    }
 
-    // Extract variants stats   
-    filtered
-        | combine(variable_ch)
-        | EXTRACT
+
+    // Extract variants stats
+    if ( params.extract ) {
+        filtered
+            | combine(variable_ch)
+            | EXTRACT
+    }  
+
 }

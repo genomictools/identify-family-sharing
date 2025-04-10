@@ -8,13 +8,13 @@ process FILTER {
     publishDir("${params.output_dir}/filtered", mode: 'copy')
 
     input:
-    tuple val(famid), path(ped),
-          val(pheno), path(file), path(index),
+    tuple val(famid), val(pheno), path(ped),
+          path(file), path(index),
+          val(n_vars),
           val(category)
 
     output:
-    tuple val(famid), path(ped),
-          val(pheno), val(category),
+    tuple val(famid), val(pheno), val(category), path(ped),
           path("${famid}.${pheno}.${category}.vcf.gz"),
           path("${famid}.${pheno}.${category}.vcf.gz.tbi"),
 		  path("${famid}.${pheno}.${category}.annotation.tsv"),

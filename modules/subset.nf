@@ -8,29 +8,28 @@ process SUBSET {
     publishDir("${params.output_dir}/subsets", mode: 'copy')
 
     input:
-    tuple val(famid), path(ped),
-          val(pheno), path(file), path(index)
+    tuple val(famid), val(pheno), path(ped),
+          path(file), path(index)
 
     output:
-    tuple val(famid), path(ped),
-          val(pheno), 
+    tuple val(famid), val(pheno), path(ped),
           path("${famid}.${pheno}.vcf.gz"),
-          path("${famid}.${pheno}.vcf.gz.tbi")
+          path("${famid}.${pheno}.vcf.gz.tbi"),
+		  env(n_vars)
 
     script:
     """
     #!/bin/bash
-    # Subset pheno
-    cat ${ped} | awk '{ print \$1 }' > samples.txt
-    bcftools view --force-samples -g het -S samples.txt ${file} | \
+    # Subset pheno for family members
+    bcftools view --force-samples -g het -S <(tail -n +2 ${ped} | cut -f 2) ${file} | \
     bcftools view -i 'FILTER="PASS"' | \
     bcftools norm -m -any | \
-    bcftools +fill-tags -- -t all | \
-    bcftools +setGT -- -t . -n 0 | \
-    bcftools +setGT -- -t q -n 0 -i 'FMT/GQ < ${params.GQ} | FMT/DP < ${params.DP} | VAF < ${params.VAF}' | \
-    bcftools +fill-tags -- -t all | \
-    bcftools view -g het --threads ${task.cpu} -Oz -o ${famid}.${pheno}.vcf.gz
+    bcftools view -g het --threads ${task.cpus} -Oz -o ${famid}.${pheno}.vcf.gz
 
+    # Index the VCF file
     tabix ${famid}.${pheno}.vcf.gz
+
+	# Count the number of variants
+    n_vars=\$(bcftools index -n ${famid}.${pheno}.vcf.gz)
     """
 }

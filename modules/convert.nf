@@ -8,12 +8,11 @@ process CONVERT {
     publishDir("${params.output_dir}/plinked", mode: 'copy')
 
     input:
-    tuple val(famid), path(ped), val(pheno), val(category),
-          path(vcf_in), path(index_in), path(variants), val(n_vars)
+    tuple val(famid), val(pheno), val(category), path(ped),
+          path(file), path(index), path(variants), val(n_vars)
 
     output:
-    tuple val(famid), val(pheno), val(category),
-          path("${famid}.${pheno}.${category}.ped"),
+    tuple val(famid), val(pheno), val(category), path(ped),
           path("${famid}.${pheno}.${category}.bim"),
           path("${famid}.${pheno}.${category}.bed"),
           path("${famid}.${pheno}.${category}.fam"),
@@ -24,14 +23,13 @@ process CONVERT {
     script:
     """
     #!/bin/bash
-    # Supbset pedigree columns
-    cp ${ped} ${famid}.${pheno}.${category}.ped
-    cat ${ped} | awk '{print \$6,\$1,\$2,\$3}' > parents.txt
-    cat ${ped} | awk '{print \$6,\$1,\$4}'     > sex.txt
-    cat ${ped} | awk '{print \$6,\$1,\$5}'     > aff.txt
+    tail -n +2 ${ped} | awk '{print \$1, \$2, \$3, \$4}' > parents.txt
+    tail -n +2 ${ped} | awk '{print \$1, \$2, \$5}'      > sex.txt
+    tail -n +2 ${ped} | awk '{print \$1, \$2, \$6}'      > aff.txt
 
+    # Convert VCF to PLINK format
     plink \
-        --vcf ${vcf_in} \
+        --vcf ${file} \
         --make-bed \
         --const-fid ${famid} \
         --update-parents parents.txt \

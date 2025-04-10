@@ -6,9 +6,8 @@ process PEDIGREE {
     publishDir("${params.output_dir}/pedigree", mode: 'copy')
 
     input:
-    tuple val(famid), val(id), val(fid), val(mid), val(sex), val(aff), val(family)
+    tuple val(famid), val(id), val(fid), val(mid), val(sex), val(aff), val(carr)
 
-          
     output:
     tuple val(famid), path("${famid}.ped")
 
@@ -22,7 +21,8 @@ process PEDIGREE {
         <(echo -e "${mid.join('\n')}") \
         <(echo -e "${sex.join('\n')}") \
         <(echo -e "${aff.join('\n')}") \
-        <(echo -e "${family.join('\n')}") \
+        <(echo -e "${carr.join('\n')}") | \
+        awk '{print "${famid}", \$0}' \
         > ${famid}.ped
     """
 }

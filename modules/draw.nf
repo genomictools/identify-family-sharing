@@ -9,17 +9,16 @@ process DRAW {
 
     input:
     tuple val(famid), val(pheno), val(category),
-          path(ped),
-          val(type), val(gene), val(variant),
-          val(potential_pvalues), val(pvalues)
+          path(ped), path(affected), path(carrier),
+          val(type), val(gene), val(variant)
 
     output:
     tuple val(famid), val(pheno), val(category), val(type), val(gene),
-          path("${famid}.${pheno}.${category}.${type}.${gene}.png"), optional: true
+          path("${famid}.${pheno}.${category}.${type}.${gene}.png")
 
     script:
     """
     #!/bin/bash
-    draw.R ${famid} ${pheno} ${category} ${ped} ${type} ${gene} ${variant.join(',')}
+    draw.R ${famid} ${pheno} ${category} ${ped} ${affected} ${carrier} ${type} ${gene} ${variant.join(',')}
     """
 }

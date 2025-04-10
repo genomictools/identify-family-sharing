@@ -8,10 +8,11 @@ process SHARING {
     publishDir("${params.output_dir}/sharing", mode: 'copy')
 
     input:
-    tuple val(famid), val(pheno), val(category),
-          path(ped), path(bim), path(bed), path(fam), path(nosex), path(log),
-          path(variants), val(type)
-
+    tuple val(famid), val(pheno), val(category), path(ped),
+		path(annotations), path(rlist), path(frq_strat),
+            path(frqx), path(snplist), path(log),
+            val(type)
+            
     output:
     tuple val(famid), val(pheno), val(category), val(type),
           path("${famid}.${pheno}.${category}.${type}.tsv")
@@ -19,6 +20,6 @@ process SHARING {
     script:
     """
     #!/bin/bash
-    sharing.R ${famid} ${pheno} ${category} ${ped} ${bim} ${bed} ${fam} ${variants} ${type}
+    sharing.R ${famid} ${pheno} ${category} ${ped} ${annotations} ${rlist} ${frq_strat} ${type}
     """
 }

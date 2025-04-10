@@ -15,12 +15,15 @@ URL="https://figshare.com/ndownloader/files"
 
 wget -c $URL/50690370 -O input/pheno.variants.vcf.gz
 wget -c $URL/50690373 -O input/pheno.variants.vcf.gz.tbi
-wget -c $URL/51733736 -O input/pheno.families.ped
-wget -c $URL/50690367 -O input/pheno.cases.txt
-wget -c $URL/51780443 -O input/pheno.phenotypes.tsv
+wget -c $URL/53574317 -O input/FAM_01.ped
+wget -c $URL/53574314 -O input/FAM_02.ped
+wget -c $URL/53574311 -O input/FAM_03.ped
 
-echo "cohort,file,index,pedigree,phenotypes" > input/cohorts_info.csv
-echo "pheno,input/pheno.variants.vcf.gz,input/pheno.variants.vcf.gz.tbi,input/pheno.families.ped,input/pheno.phenotypes.tsv" >> input/cohorts_info.csv
+# Create cohorts_info.csv
+echo "pheno,file,index,family,pedigree" > input/cohorts_info.csv
+echo "pheno,input/pheno.variants.vcf.gz,input/pheno.variants.vcf.gz.tbi,FAM_01,input/FAM_01.ped," >> input/cohorts_info.csv
+echo "pheno,input/pheno.variants.vcf.gz,input/pheno.variants.vcf.gz.tbi,FAM_02,input/FAM_02.ped," >> input/cohorts_info.csv
+echo "pheno,input/pheno.variants.vcf.gz,input/pheno.variants.vcf.gz.tbi,FAM_03,input/FAM_03.ped," >> input/cohorts_info.csv
 
 # Run nextflow
 module load Nextflow

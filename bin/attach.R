@@ -14,8 +14,9 @@ plnk <- snpStats::read.plink(bed, bim, fam)
 rownames(plnk$genotypes) <- plnk$fam$member
 
 # Load pedigree
-dat <- readr::read_tsv(ped_file, col_names = FALSE)
-pdg <- with(dat, pedtools::ped(X1, X2, X3, X4, famid = unique(X6)))
+pdg  <- pedtools::readPed(ped_file, colSkip = c(6, 7))
+# aff  <- readr::read_tsv(ped_file, col_select = 6)
+# carr <- readr::read_tsv(ped_file, col_select = 7)
 
 convert_genotypes <- function(s) {
   dplyr::case_when(

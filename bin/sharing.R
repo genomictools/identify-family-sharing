@@ -7,76 +7,54 @@ famid    <- args[1]
 pheno    <- args[2]
 category <- args[3]
 ped_file <- args[4]
-bim      <- args[5]
-bed      <- args[6]
-fam      <- args[7]
-variants <- args[8]
-type     <- args[9]
+annotations <- args[5]
+rlist    <- args[6]
+frq      <- args[7]
+type     <- args[8]
 
-# setwd('/data/rds/DGE/DUDGE/MOPOPGEN/mahmed03/childhood_cancer/wtnb_families/')
-# 
-# bim       <- 'results/plinked/FACT5726.wtnb.Stop.bim'
-# bed       <- 'results/plinked/FACT5726.wtnb.Stop.bed'
-# fam       <- 'results/plinked/FACT5726.wtnb.Stop.fam'
-# ped_file  <- 'results/plinked/FACT5726.wtnb.Stop.ped'
-# type      <- 'affected'
+# ped_file    <- 'wtnb_families/results/variants/FACT0471.ped'
+# annotations <- 'wtnb_families/results/variants/FACT0471.wtnb.Rare.annotation.tsv'
+# rlist       <- 'wtnb_families/results/variants/FACT0471.wtnb.Rare.extracted.rlist'
+# frq         <- 'wtnb_families/results/variants/FACT0471.wtnb.Rare.extracted.frq.strat'
 
-# Load plink files
-plnk <- snpStats::read.plink(bed, bim, fam)
-rownames(plnk$genotypes) <- plnk$fam$member
+# annotations
+anno <- readr::read_tsv(annotations)
+anno <- dplyr::select(anno, variant = SNP, gene = SYMBOL, ensembl = Gene, IMPACT, Consequence, clinsig = CLIN_SIG)
 
-# Load pedigree
-d <- readr::read_tsv(
-  ped_file,
-  col_names = c('id', 'dadid', 'momid', 'sex', 'affected', 'famid')
+# rlist
+ids <- unlist(readr::read_tsv(ped_file, col_select = 2))
+
+rlist <- readr::read_delim(rlist, delim = ' ', col_names = c('variant', 'genotype', 'alt', 'ref'))
+rlist <- tidyr::unite(rlist, samples, dplyr::starts_with('X'), sep = ' ')
+rlist <- dplyr::mutate(rlist, samples = purrr::map_chr(stringr::str_split(samples, ' '), ~{paste(intersect(ids, unlist(.x)), collapse = ',')}))
+rlist <- dplyr::select(rlist, variant, genotype, samples)
+rlist <- tidyr::pivot_wider(rlist, names_from = 'genotype', values_from = 'samples')
+
+# pedigree
+clusters <- tibble::tibble(
+  V1 = as.integer(0:3),
+  V2 = c('non', 'potential', 'affected', 'obligate')
 )
 
-d$affected <- ifelse(d$affected == 0, NA, d$affected - 1)
-d$sex <- ifelse(d$sex == 0, 1, d$sex)
+# expected numbers in each cluster
+carr <- readr::read_tsv(ped_file, col_select = 7)
+carr <- dplyr::left_join(carr, clusters, by = c('carr' = 'V1'))
+carr <- dplyr::group_by(carr, cluster = V2)
+carr <- dplyr::reframe(carr, expected = dplyr::n())
 
-pdg <- with(d, kinship2::pedigree(id, dadid, momid, sex, affected, famid = famid))
+# mac in each cluster
+frq <- read.table(frq, skip = 1)
+frq <- setNames(frq, c('chrom', 'variant', 'cluster', 'alt', 'ref', 'maf', 'mac', 'nchromobs'))
+frq <- dplyr::left_join(frq, clusters, by = c('cluster' = 'V1'))
+frq <- dplyr::select(frq, variant, mac, cluster = V2)
+frq <- tibble::as_tibble(frq)
 
-if ( type == 'affected' ) {
-  # carriers are the affected
-  carrs <- pdg$id[pdg$affected == 1]
-} else if ( type == 'complete') {
-} else if ( type == 'partial') {
-} else {
-  stop("Sharing type is not recognized.")
-}
-
-# Calculate probability of sharing among carriers
-prob <- RVS::RVsharing(pdg[1], carriers = carrs)
-names(prob) <- unique(d$famid)
-
-# Calculate p-values of sharing among carriers
-sharing <- RVS::multipleVariantPValue(
-  plnk$genotypes,
-  famInfo = plnk$fam,
-  sharingProbs = prob
-)
-
-# Format the output
-sharing_df <- tibble::tibble(
-  famid = famid,
-  variant = names(sharing$pvalues),
-  pvalues = sharing$pvalues,
-  potential_pvalues = sharing$potential_pvalues
-)
-
-# Annotations
-anno <- readr::read_tsv(variants)
-anno <- dplyr::select(anno, variant = SNP, gene = SYMBOL)
-
-# File ids
-ids <- tibble::tibble(
-  famid = famid,
-  pheno = pheno,
-  category = category,
-  type = type)
-
-# Save the results
-res <- dplyr::left_join(ids, sharing_df)
+# merge
+res <- dplyr::left_join(frq, carr)
+res <- dplyr::left_join(res, rlist)
 res <- dplyr::left_join(res, anno)
-out_file  <- paste(famid, pheno, category, type, 'tsv', sep = '.')
-readr::write_tsv(res, out_file)
+res <- tidyr::pivot_wider(res, values_from = c('mac', 'expected'), names_from = 'cluster')
+
+# Write output
+output <- paste(famid, pheno, category, type, 'tsv', sep = '.')
+readr::write_tsv(res, output)

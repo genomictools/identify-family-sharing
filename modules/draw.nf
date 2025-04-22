@@ -1,5 +1,5 @@
 process DRAW {
-    tag "${famid}:${pheno}:${category}:${type}:${gene}"
+    tag "${famid}:${pheno}:${category}:${gene}"
 
     label 'simple'
 
@@ -10,15 +10,15 @@ process DRAW {
     input:
     tuple val(famid), val(pheno), val(category),
           path(ped), path(affected), path(carrier),
-          val(type), val(gene), val(variant)
+          val(gene), val(variant)
 
     output:
-    tuple val(famid), val(pheno), val(category), val(type), val(gene),
-          path("${famid}.${pheno}.${category}.${type}.${gene}.png")
+    tuple val(famid), val(pheno), val(category), val(gene),
+          path("${famid}.${pheno}.${category}.${gene}.png")
 
     script:
     """
     #!/bin/bash
-    draw.R ${famid} ${pheno} ${category} ${ped} ${affected} ${carrier} ${type} ${gene} ${variant.join(',')}
+    draw.R ${famid} ${pheno} ${category} ${ped} ${affected} ${carrier} ${gene} ${variant.join(',')}
     """
 }

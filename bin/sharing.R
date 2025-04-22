@@ -3,30 +3,26 @@
 # Capture command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
 
-famid    <- args[1]
-pheno    <- args[2]
-category <- args[3]
-ped_file <- args[4]
+famid       <- args[1]
+pheno       <- args[2]
+category    <- args[3]
+ped_file    <- args[4]
 annotations <- args[5]
-rlist    <- args[6]
-frq      <- args[7]
-type     <- args[8]
-
-# ped_file    <- 'wtnb_families/results/variants/FACT0471.ped'
-# annotations <- 'wtnb_families/results/variants/FACT0471.wtnb.Rare.annotation.tsv'
-# rlist       <- 'wtnb_families/results/variants/FACT0471.wtnb.Rare.extracted.rlist'
-# frq         <- 'wtnb_families/results/variants/FACT0471.wtnb.Rare.extracted.frq.strat'
+rlist       <- args[6]
+frq         <- args[7]
+cases       <- args[8]
 
 # annotations
 anno <- readr::read_tsv(annotations)
 anno <- dplyr::select(anno, variant = SNP, gene = SYMBOL, ensembl = Gene, IMPACT, Consequence, clinsig = CLIN_SIG)
 
-# rlist
-ids <- unlist(readr::read_tsv(ped_file, col_select = 2))
+# cases 
+cases <- readr::read_lines(cases)
 
+# rlist
 rlist <- readr::read_delim(rlist, delim = ' ', col_names = c('variant', 'genotype', 'alt', 'ref'))
 rlist <- tidyr::unite(rlist, samples, dplyr::starts_with('X'), sep = ' ')
-rlist <- dplyr::mutate(rlist, samples = purrr::map_chr(stringr::str_split(samples, ' '), ~{paste(intersect(ids, unlist(.x)), collapse = ',')}))
+rlist <- dplyr::mutate(rlist, samples = purrr::map_chr(stringr::str_split(samples, ' '), ~{paste(intersect(cases, unlist(.x)), collapse = ',')}))
 rlist <- dplyr::select(rlist, variant, genotype, samples)
 rlist <- tidyr::pivot_wider(rlist, names_from = 'genotype', values_from = 'samples')
 
@@ -37,7 +33,9 @@ clusters <- tibble::tibble(
 )
 
 # expected numbers in each cluster
-carr <- readr::read_tsv(ped_file, col_select = 7)
+carr <- readr::read_tsv(ped_file, col_select = c(2, 7))
+carr <- dplyr::filter(carr, id %in% cases)
+carr <- dplyr::select(carr, carr)
 carr <- dplyr::left_join(carr, clusters, by = c('carr' = 'V1'))
 carr <- dplyr::group_by(carr, cluster = V2)
 carr <- dplyr::reframe(carr, expected = dplyr::n())
@@ -49,12 +47,30 @@ frq <- dplyr::left_join(frq, clusters, by = c('cluster' = 'V1'))
 frq <- dplyr::select(frq, variant, mac, cluster = V2)
 frq <- tibble::as_tibble(frq)
 
+# add info
+info = tibble::tibble(famid = famid, pheno = pheno, category = category, variant = unique(frq$variant))
+
 # merge
-res <- dplyr::left_join(frq, carr)
+res <- dplyr::full_join(info, frq)
+res <- dplyr::left_join(res, carr)
 res <- dplyr::left_join(res, rlist)
-res <- dplyr::left_join(res, anno)
+res <- dplyr::inner_join(res, anno)
 res <- tidyr::pivot_wider(res, values_from = c('mac', 'expected'), names_from = 'cluster')
 
+# order columns
+cols <- c(paste('expected', clusters$V2, sep = '_'),
+          paste('mac', clusters$V2, sep = '_'))
+
+m <- as.data.frame(matrix(NA, ncol = length(cols)))
+names(m) <- cols
+
+res <- dplyr::left_join(res, m)
+res <- dplyr::relocate(res, setdiff(names(res), cols), sort(cols))
+
+# fill NA
+res <- dplyr::mutate_at(res, dplyr::vars(dplyr::starts_with('expected_')), ~ifelse(is.na(.x), 0, .x))
+res <- dplyr::mutate_at(res, dplyr::vars(dplyr::starts_with('mac_')), ~ifelse(is.na(.x), 0, .x))
+
 # Write output
-output <- paste(famid, pheno, category, type, 'tsv', sep = '.')
+output <- paste(famid, pheno, category, 'tsv', sep = '.')
 readr::write_tsv(res, output)

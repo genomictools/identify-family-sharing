@@ -1,5 +1,5 @@
 process SHARING {
-    tag "${famid}:${pheno}:${category}:${type}"
+    tag "${famid}:${pheno}:${category}"
 
     label 'simple'
 
@@ -10,16 +10,15 @@ process SHARING {
     input:
     tuple val(famid), val(pheno), val(category), path(ped),
 		path(annotations), path(rlist), path(frq_strat),
-            path(frqx), path(snplist), path(log),
-            val(type)
+            path(frqx), path(snplist), path(cases), path(log)
             
     output:
-    tuple val(famid), val(pheno), val(category), val(type),
-          path("${famid}.${pheno}.${category}.${type}.tsv")
+    tuple val(famid), val(pheno), val(category),
+          path("${famid}.${pheno}.${category}.tsv")
 
     script:
     """
     #!/bin/bash
-    sharing.R ${famid} ${pheno} ${category} ${ped} ${annotations} ${rlist} ${frq_strat} ${type}
+    sharing.R ${famid} ${pheno} ${category} ${ped} ${annotations} ${rlist} ${frq_strat} ${cases}
     """
 }

@@ -8,9 +8,8 @@ category    <- args[3]
 ped_file	<- args[4]
 affected    <- args[5]
 carrier	    <- args[6]
-type 	    <- args[7]
-gene 	    <- args[8]
-variant 	<- args[9]
+gene 	    <- args[7]
+variant 	<- args[8]
 
 # Load data
 pedigree <- pedtools::readPed(ped_file)
@@ -18,7 +17,7 @@ affected <- readr::read_lines(affected)
 carrier  <- readr::read_lines(carrier)
 
 size <- pedtools::pedsize(pedigree)
-file_name <- paste(famid, pheno, category, type, gene, "png", sep = '.')
+file_name <- paste(famid, pheno, category, gene, "png", sep = '.')
 
 # Extract marker names
 markers <- unlist(strsplit(variant, split = ','))

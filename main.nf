@@ -6,10 +6,11 @@ include { SUBSET }      from './modules/subset.nf'
 include { FILL }        from './modules/fill.nf'
 include { FILTER }      from './modules/filter.nf'
 include { CONVERT }     from './modules/convert.nf'
+include { EXTRACT }     from './modules/extract.nf'
 include { SHARING }     from './modules/sharing.nf'
+include { CLASSIFY }    from './modules/classify.nf'
 include { ATTACH }      from './modules/attach.nf'
 include { DRAW }        from './modules/draw.nf'
-include { EXTRACT }     from './modules/extract.nf'
 
 // Define input channels
 variants_ch = Channel.fromPath(params.cohorts)
@@ -38,13 +39,16 @@ workflow {
     // Extract variants stats
     filtered
         | EXTRACT
-        | combine(type_ch)
         | SHARING
+        | groupTuple(by: [1, 2])
+        | combine(type_ch)
+        | CLASSIFY
+        | filter { it[2] == 'variant' }
         | splitCsv(header: true, sep: '\t')
-        | map { famid, pheno, category, type, row -> [ famid, pheno, category, type, row.gene, row.variant] }
-        | groupTuple(by: [0, 1, 2, 3, 4])
+        | map { pheno, category, type, row -> [ row.famid, row.pheno, row.category, row.gene, row.variant ] }
         | distinct
-        | take(3)
+        | groupTuple(by: [0, 1, 2, 3])
+        | filter { it[3] == 'CDC20' || it[3] == 'MUC6' }
         | set { shared }
 
     // Draw pedigrees

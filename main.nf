@@ -22,6 +22,7 @@ variants_ch = Channel.fromPath(params.cohorts)
 
 category_ch = Channel.of(params.categories.split(','))
 type_ch     = Channel.of(params.type.split(','))
+blacklist_ch = Channel.fromPath(params.blacklist)
 
 workflow {
     // Extract families, Subset and Filter
@@ -39,6 +40,7 @@ workflow {
     // Extract variants stats
     filtered
         | EXTRACT
+        | combine(blacklist_ch)
         | SHARING
         | groupTuple(by: [1, 2])
         | combine(type_ch)

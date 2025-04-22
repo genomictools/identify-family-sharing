@@ -11,6 +11,10 @@ annotations <- args[5]
 rlist       <- args[6]
 frq         <- args[7]
 cases       <- args[8]
+blacklist   <- args[9]
+
+# blacklisted variants
+blacklist <- readr::read_lines(blacklist)
 
 # annotations
 anno <- readr::read_tsv(annotations)
@@ -55,6 +59,7 @@ res <- dplyr::full_join(info, frq)
 res <- dplyr::left_join(res, carr)
 res <- dplyr::left_join(res, rlist)
 res <- dplyr::inner_join(res, anno)
+res <- dplyr::filter(res, !variant %in% blacklist)
 res <- tidyr::pivot_wider(res, values_from = c('mac', 'expected'), names_from = 'cluster')
 
 # order columns

@@ -1,4 +1,5 @@
 
 {
-    "cohorts": "$TOY_DATASETS/wes-sarek/cohorts_info.csv"
+    "cohorts": "$TOY_DATASETS/wes-sarek/cohorts_info.csv",
+    "blacklist" : "$TOY_DATASETS/wes-sarek/blacklist.csv"
 }

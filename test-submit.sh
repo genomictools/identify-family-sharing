@@ -15,6 +15,7 @@ URL="https://figshare.com/ndownloader/files"
 
 wget -c $URL/50690370 -O input/pheno.variants.vcf.gz
 wget -c $URL/50690373 -O input/pheno.variants.vcf.gz.tbi
+wget -c $URL/53887718 -O input/blacklist.txt
 wget -c $URL/53574317 -O input/FAM_01.ped
 wget -c $URL/53574314 -O input/FAM_02.ped
 wget -c $URL/53574311 -O input/FAM_03.ped

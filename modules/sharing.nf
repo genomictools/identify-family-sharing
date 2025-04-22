@@ -10,7 +10,8 @@ process SHARING {
     input:
     tuple val(famid), val(pheno), val(category), path(ped),
 		path(annotations), path(rlist), path(frq_strat),
-            path(frqx), path(snplist), path(cases), path(log)
+            path(frqx), path(snplist), path(cases), path(log),
+            path(blacklist)
             
     output:
     tuple val(famid), val(pheno), val(category),
@@ -19,6 +20,6 @@ process SHARING {
     script:
     """
     #!/bin/bash
-    sharing.R ${famid} ${pheno} ${category} ${ped} ${annotations} ${rlist} ${frq_strat} ${cases}
+    sharing.R ${famid} ${pheno} ${category} ${ped} ${annotations} ${rlist} ${frq_strat} ${cases} ${blacklist}
     """
 }

@@ -11,6 +11,8 @@ include { SHARING }     from './modules/sharing.nf'
 include { CLASSIFY }    from './modules/classify.nf'
 include { ATTACH }      from './modules/attach.nf'
 include { DRAW }        from './modules/draw.nf'
+include { PARSE }       from './modules/parse.nf'
+include { MODEL }       from './modules/model.nf'
 
 // Define input channels
 variants_ch = Channel.fromPath(params.cohorts)
@@ -58,4 +60,9 @@ workflow {
         | ATTACH
         | ( params.draw ? combine(shared, by: [0, 1, 2]) : map {it} )
         | ( params.draw ? DRAW : map {it} )
+
+    // Model families
+    FILTER.out
+        | PARSE
+        | MODEL
 }

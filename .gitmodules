@@ -1,0 +1,15 @@
+[submodule "bin"]
+	path = bin
+	url = git@github.com:genomictools/bin.git
+	branch = identify-family-sharing
+[submodule "modules"]
+	path = modules
+	url = git@github.com:genomictools/modules.git
+	branch = identify-family-sharing
+[submodule "subworkflows"]
+	path = subworkflows
+	url = git@github.com:genomictools/modules.git
+	branch = identify-family-sharing
+[submodule "conf"]
+	path = conf
+	url = git@github.com:genomictools/conf.git

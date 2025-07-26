@@ -8,13 +8,13 @@ include { summarize_sharing } from './subworkflows/summarize_sharing.nf'
 // Define input channels
 family_ch = Channel.fromPath(params.cohorts)
     | splitCsv(header: true, sep: ',')
-    | map { row -> [ row.famid, file(row.cases), file(row.ped)] }
+    | map { row -> [ row.famid, file(row.cases), file(row.pedigree)] }
     | unique
 
 variants_ch = Channel.fromPath(params.cohorts)
     | splitCsv(header: true, sep: ',')
     | map { row -> [
-        row.famid, row.category, file(row.snplist), file(row.rlist), file(row.freq), file(row.annotation)
+        row.famid, row.category, file(row.rlist), file(row.annotation)
     ] }
 
 blacklist_ch = Channel.fromPath(params.blacklist)

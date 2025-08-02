@@ -19,7 +19,16 @@ variants_ch = Channel.fromPath(params.cohorts)
 
 blacklist_ch = Channel.fromPath(params.blacklist)
 
+if ( params.draw ) {
+to_draw = Channel.fromPath(params.draw_genes)
+    | splitCsv(header: true, sep: ',')
+    | map { row -> [ row.famid, row.gene, row.variant ] }
+    | groupTuple(by: [0, 1])
+} else {
+to_draw = Channel.empty()
+}
+
 // Run the main workflow
 workflow  {
-    summarize_sharing(variants_ch, family_ch, blacklist_ch)
+    summarize_sharing(variants_ch, family_ch, blacklist_ch, to_draw)
 }

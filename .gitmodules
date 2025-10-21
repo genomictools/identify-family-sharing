@@ -8,7 +8,7 @@
 	branch = identify-family-sharing
 [submodule "subworkflows"]
 	path = subworkflows
-	url = git@github.com:genomictools/modules.git
+	url = git@github.com:genomictools/subworkflows.git
 	branch = identify-family-sharing
 [submodule "conf"]
 	path = conf

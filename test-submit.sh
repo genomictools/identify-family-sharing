@@ -6,26 +6,22 @@
 #SBATCH -p master-worker
 #SBATCH -t 120:00:00
 
-# Load conda environment
-module load Java/17
-source $NXF_CONDA
+# Setup test directory
+mkdir -p tests/
 
-# Setup tests
-# curl -fsSL https://get.nf-test.com | bash
-# ./nf-test init
-# ./nf-test generate pipeline main.nf
+TESTDATA="git@github.com:genomictools/test-datasets.git"
+BRANCH="identify-family-sharing"
+SRC="tests/input"
 
-# Download input data
-mkdir -p tests
-# URL="https://figshare.com/ndownloader/files"
-# wget -c $URL/56135969 -O input.zip
-# unzip -o input.zip -d tests/
+git -C $SRC pull || \
+git clone -b $BRANCH $TESTDATA $SRC
 
-# # Run tests
-# # ./nf-test test tests/main.nf.test
+# Run nextflow
+module load Nextflow
 
-# # Run nextflow (example)
 cd tests/
+
+# nextflow run genomictools/identify-family-sharing -r main \
 nextflow run ../main.nf \
     --output_dir ./results/ \
     -profile local,test \
